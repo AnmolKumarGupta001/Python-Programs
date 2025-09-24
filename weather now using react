@@ -1,0 +1,71 @@
+import React, { useState } from "react";
+
+export default function App() {
+  const [city, setCity] = useState("");
+  const [weather, setWeather] = useState(null);
+  const [error, setError] = useState("");
+
+  // Get weather data
+  const fetchWeather = async () => {
+    setError("");
+    setWeather(null);
+
+    try {
+      // 1. Get city coordinates using Open-Meteo Geocoding API
+      const geoRes = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${city}`
+      );
+      const geoData = await geoRes.json();
+
+      if (!geoData.results || geoData.results.length === 0) {
+        setError("City not found. Try another one.");
+        return;
+      }
+
+      const { latitude, longitude } = geoData.results[0];
+
+      // 2. Fetch actual weather data
+      const weatherRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+      );
+      const weatherData = await weatherRes.json();
+
+      setWeather(weatherData.current_weather);
+    } catch (err) {
+      setError("Failed to fetch weather. Try again later.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500 text-white p-4">
+      <h1 className="text-3xl font-bold mb-6">🌤️ Weather Now</h1>
+
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Enter city name"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="px-4 py-2 rounded text-black w-60"
+        />
+        <button
+          onClick={fetchWeather}
+          className="px-4 py-2 bg-white text-blue-600 font-semibold rounded shadow"
+        >
+          Search
+        </button>
+      </div>
+
+      {error && <p className="text-red-200">{error}</p>}
+
+      {weather && (
+        <div className="bg-white text-black rounded-lg shadow-lg p-6 mt-4 text-center">
+          <h2 className="text-xl font-bold mb-2">{city}</h2>
+          <p>🌡️ Temperature: {weather.temperature}°C</p>
+          <p>💨 Wind Speed: {weather.windspeed} km/h</p>
+          <p>📍 Wind Direction: {weather.winddirection}°</p>
+        </div>
+      )}
+    </div>
+  );
+}
